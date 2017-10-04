@@ -55,15 +55,21 @@ public class MorseDecoder {
         for (int binIndex = 0; binIndex < totalBinCount; binIndex++) {
             // Get the right number of samples from the inputFile
             // Sum all the samples together and store them in the returnBuffer
+            inputFile.readFrames(sampleBuffer, BIN_SIZE);
+            for (int bins = 0; bins < sampleBuffer.length; bins++) {
+                returnBuffer[binIndex] += Math.abs(sampleBuffer[bins]);
+            }
         }
         return returnBuffer;
     }
 
     /** Power threshold for power or no power. You may need to modify this value. */
-    private static final double POWER_THRESHOLD = 10;
+    private static final double POWER_THRESHOLD = 7;
 
     /** Bin threshold for dots or dashes. Related to BIN_SIZE. You may need to modify this value. */
-    private static final int DASH_BIN_COUNT = 8;
+    private static final int DASH_BIN_COUNT = 5;
+
+
 
     /**
      * Convert power measurements to dots, dashes, and spaces.
@@ -81,13 +87,53 @@ public class MorseDecoder {
          * There are four conditions to handle. Symbols should only be output when you see
          * transitions. You will also have to store how much power or silence you have seen.
          */
+        String dotDash = "";
+        int count = 0;
 
         // if ispower and waspower
+        for (int i = 0; i < powerMeasurements.length; i++) {
+            if (powerMeasurements[i] > POWER_THRESHOLD) {
+                if (count < -1 * DASH_BIN_COUNT) {
+                    dotDash += " ";
+                    count = 0;
+                }
+                else if ((count < 0) && (count >= -1 * DASH_BIN_COUNT)) {
+                    dotDash += "";
+                    count = 0;
+                }
+                count++;
+            }
+
+            else {
+                if (count > DASH_BIN_COUNT) {
+                    dotDash += "-";
+                    count = 0;
+                }
+                else if ((count > 0) && (count <= DASH_BIN_COUNT)) {
+                    dotDash += ".";
+                    count = 0;
+                }
+                count--;
+            }
+        }
+        if (count > DASH_BIN_COUNT) {
+            dotDash += "-";
+        }
+        else if (count > 0) {
+            dotDash += ".";
+        }
+        else if (count < -1 * DASH_BIN_COUNT) {
+            dotDash += " ";
+        }
+        else {
+            dotDash += "";
+        }
         // else if ispower and not waspower
         // else if issilence and wassilence
         // else if issilence and not wassilence
 
-        return "";
+
+        return dotDash;
     }
 
     /**
